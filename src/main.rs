@@ -1,15 +1,15 @@
 use std::{
-    io,
+    io, process,
     sync::{Arc, Mutex},
     time::Duration,
 };
 
 use crossterm::{
-    event::{self, Event},
+    event::{self, DisableMouseCapture, Event},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{Terminal, prelude::CrosstermBackend, widgets::Paragraph};
+use ratatui::{Terminal, prelude::CrosstermBackend};
 
 mod app;
 mod rpc;
@@ -18,6 +18,11 @@ mod ui;
 /// Entry point of the application
 #[tokio::main]
 async fn main() -> Result<(), io::Error> {
+    // Set up panic handler to see errors before terminal cleanup
+    std::panic::set_hook(Box::new(|panic_info| {
+        eprintln!("PANIC: {:?}", panic_info);
+    }));
+
     // Initialize terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -25,6 +30,31 @@ async fn main() -> Result<(), io::Error> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
+    // Run the app and capture the result
+    let result = run_app(&mut terminal).await;
+
+    // Restore terminal, even if there was an error
+    disable_raw_mode()?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
+    terminal.show_cursor()?;
+
+    // Return the result (or error) after cleanup
+    // Exit cleanly
+    match result {
+        Ok(_) => process::exit(0),
+        Err(e) => {
+            eprintln!("Application error: {}", e);
+            process::exit(1);
+        }
+    }
+}
+
+/// Main application loop separated from setup/teardown
+async fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
     // Shared state for benchmark results
     // Mutex<...> - A lock that ensures only one thread can access the Vec at a time (prevents data races)
     // Arc<...> - "Atomic Reference Counter" - lets multiple parts of your code share ownership of the same data
@@ -32,57 +62,35 @@ async fn main() -> Result<(), io::Error> {
     // Both need to access the same AppRpcResult>
     // Arc lets them share it safely, Mutex prevents them from accessing it simultaneously
     let app = Arc::new(Mutex::new(app::App::new()));
-    // Another reference to the same results
     let app_clone = app.clone();
 
-    // Spawn background task for benchmarking
-    // move - moves ownership of results_clone into the async block
-    tokio::spawn(async move {
+    // Spawn background task
+    let benchmark_task = tokio::spawn(async move {
         loop {
             let bench_results = rpc::benchmark_all_rpcs().await;
-            // Dereference the Mutex to get to the Vec and update it
             app_clone.lock().unwrap().update_results(bench_results);
             tokio::time::sleep(Duration::from_secs(3)).await;
         }
     });
 
-    // Main application loop
+    // Main UI loop
     loop {
-        // Get latest results from shared state - clone them to release lock quickly
-        let latest_results = {
+        let (latest_results, last_update, should_quit) = {
             let current_app = app.lock().unwrap();
-            current_app.results.clone()
+            (
+                current_app.results.clone(),
+                current_app.last_update,
+                current_app.should_quit,
+            )
         };
 
-        // Render the UI
         terminal.draw(|f| {
-            // Display the 5 fastest RPC and total count
-            let text = if latest_results.is_empty() {
-                "Benchmarking RPCs... Press 'q' to quit.".to_string()
-            } else {
-                let mut output = format!("Benchmarked {} RPCs:\n\n", latest_results.len());
-                for (i, result) in latest_results.iter().enumerate() {
-                    output.push_str(&format!(
-                        "{}. {} - {}ms {}\n",
-                        i + 1,
-                        result.name,
-                        result.latency_ms,
-                        if result.healthy { "✅" } else { "🔴" }
-                    ));
-                }
-                output.push_str("\nPress 'q' to quit");
-                output
-            };
-
-            let paragraph = Paragraph::new(text);
-            f.render_widget(paragraph, f.area());
+            ui::render(f, &latest_results, last_update);
         })?;
 
-        // Handle input with event polling
         if event::poll(Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
                 if key.kind == event::KeyEventKind::Release {
-                    // Skip events that are not KeyEventKind::Press
                     continue;
                 }
                 if key.code == event::KeyCode::Char('q') {
@@ -90,13 +98,13 @@ async fn main() -> Result<(), io::Error> {
                 }
             }
         }
-        if app.lock().unwrap().should_quit {
+
+        if should_quit {
+            // Abort the background task immediately (don't wait)
+            benchmark_task.abort();
             break;
         }
     }
-    // Restore terminal
-    disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
 
     Ok(())
 }

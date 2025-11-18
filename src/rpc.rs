@@ -9,37 +9,21 @@ use std::time::{Duration, Instant};
 /// List of Solana  public RPC endpoints to benchmark
 pub fn get_rpc_list() -> Vec<(&'static str, &'static str)> {
     vec![
-        ("Helius Public", "https://rpc.helius.xyz"),
+        // Official Solana Labs
+        ("Solana Mainnet Beta", "https://api.mainnet-beta.solana.com"),
+        // Major verified providers
         ("Ankr", "https://rpc.ankr.com/solana"),
-        ("Chainstack", "https://solana-mainnet.public.blastapi.io"),
+        ("Helius Orb Public", "https://mainnet.helius-rpc.com/"),
         ("PublicNode", "https://solana-rpc.publicnode.com"),
-        ("Project Serum", "https://solana-api.projectserum.com"),
-        ("Rpcpool", "https://api.rpcpool.com"),
-        ("RunNode", "https://api.mainnet-beta.solana.com"),
-        ("Triton 1", "https://solana-mainnet.rpc.extrnode.com"),
-        ("GenesysGo", "https://ssc-dao.genesysgo.net"),
-        ("QuickNode Public", "https://api.mainnet.solana.com"),
-        ("Metaplex", "https://api.metaplex.solana.com"),
-        ("Syndica Public", "https://solana-api.syndica.io"),
-        ("Serum", "https://solana.publickey.com"),
-        ("Mainnet Beta", "https://api.mainnet-beta.solana.com"),
-        (
-            "Figment Public",
-            "https://solana--mainnet.datahub.figment.io",
-        ),
-        (
-            "Blockdaemon",
-            "https://try.blockdaemon.com/solana/mainnet/native",
-        ),
-        ("Cloudflare", "https://solana-mainnet.cloudflare-eth.com"),
-        ("Allnodes", "https://solana-mainnet-rpc.allnodes.me"),
-        ("Nodereal", "https://open-platform.nodereal.io/solana/"),
-        ("Lava", "https://solana.lava.build"),
+        ("Chainstack", "https://solana-mainnet.public.blastapi.io"),
+        // Additional stable endpoints
         ("Nodies", "https://lb.nodies.app/v1/solana-mainnet"),
-        ("Shyft", "https://rpc.shyft.to"),
-        ("SolanaFM", "https://api.solana.fm"),
+        ("Triton", "https://api.triton.one/rpc/solana"),
         ("Magic Eden", "https://rpc-mainnet.magiceden.dev"),
-        ("Triton One", "https://api.triton.one/rpc/solana"),
+        ("Shyft", "https://rpc.shyft.to"),
+        // Community providers
+        ("GenesysGo", "https://ssc-dao.genesysgo.net"),
+        ("Rpcpool", "https://api.rpcpool.com"),
     ]
 }
 

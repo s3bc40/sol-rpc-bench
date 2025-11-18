@@ -1,7 +1,10 @@
+use std::time::Instant;
+
 /// The main application state.
 pub struct App {
     pub results: Vec<RpcResult>,
     pub should_quit: bool,
+    pub last_update: Option<Instant>,
 }
 
 /// Represents the result of an RPC call.
@@ -19,6 +22,7 @@ impl App {
         Self {
             results: Vec::new(),
             should_quit: false,
+            last_update: None,
         }
     }
 
@@ -26,5 +30,6 @@ impl App {
     pub fn update_results(&mut self, new_results: Vec<RpcResult>) {
         self.results = new_results;
         self.results.sort_by_key(|r| (!r.healthy, r.latency_ms));
+        self.last_update = Some(Instant::now())
     }
 }
