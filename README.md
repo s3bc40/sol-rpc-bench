@@ -2,7 +2,7 @@
 
 A modest TUI (Terminal User Interface) for benchmarking Solana RPC endpoints in real-time. Built with Rust and Ratatui.
 
-![Solana RPC Bench Demo](demo.gif)
+![Solana RPC Bench Demo](./assets/sol-rpc-bench-demo.gif)
 
 ## 🚀 Features
 

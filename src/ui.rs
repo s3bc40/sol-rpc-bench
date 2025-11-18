@@ -38,9 +38,13 @@ pub fn render(f: &mut Frame, results: &[RpcResult], last_update: Option<Instant>
 
 /// Draws a bar chart of RPC latencies.
 fn draw_bar_chart(f: &mut Frame, area: Rect, results: &[RpcResult]) {
-    let available_width = area.width.saturating_sub(4); // Minus borders
+    // Calculate bar width based on available space
+    let available_width = area.width.saturating_sub(4);
     let num_bars = results.len().min(11) as u16;
-    let bar_width = (available_width / num_bars).max(3); // At least 3 wide
+    let bar_width = (available_width / num_bars).max(3);
+
+    // Cap max value for better visualization
+    const MAX_DISPLAY_LATENCY: u64 = 1000;
 
     let bar_data: Vec<Bar> = results
         .iter()
@@ -57,7 +61,8 @@ fn draw_bar_chart(f: &mut Frame, area: Rect, results: &[RpcResult]) {
         .data(BarGroup::default().bars(&bar_data))
         .block(Block::default().title("🚀 All RPCs").borders(Borders::ALL))
         .bar_width(bar_width)
-        .bar_gap(1);
+        .bar_gap(1)
+        .max(MAX_DISPLAY_LATENCY);
 
     f.render_widget(bar_chart, area);
 }
