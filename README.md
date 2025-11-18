@@ -171,7 +171,7 @@ MIT License - see [LICENSE](LICENSE) for details
 
 ## 📬 Contact
 
-**Your Name** - [@your_twitter](https://twitter.com/your_twitter)
+**s3bc40** - [@s3bc40](https://twitter.com/s3bc40)
 
 Project Link: [https://github.com/s3bc40/sol-rpc-bench](https://github.com/s3bc40/sol-rpc-bench)
 
